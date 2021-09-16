@@ -13,7 +13,7 @@ router = APIRouter(
     tags=["Auth"],
 )
 
-
+## Single click oauth callback https://developer.bigcommerce.com/api-docs/partner/getting-started/app-development/single-click-apps/single-click-app-oauth-flow
 @router.get('/callback')
 def auth_callback(request: Request, code: str, context: str, scope: str):
     session = Session(engine)
@@ -43,7 +43,7 @@ def auth_callback(request: Request, code: str, context: str, scope: str):
     return RedirectResponse(request.url_for('load'))
 
 
-# The Load URL. See https://developer.bigcommerce.com/api/load
+## Single click load https://developer.bigcommerce.com/api-docs/apps/guide/callbacks
 @router.get('/load')
 def load(signed_payload):
     try:
@@ -51,7 +51,6 @@ def load(signed_payload):
     except Exception as e:
         raise e
 
-    # TODO Create / update user entity
     session = Session(engine)
 
     store = session.exec(select(Store).where(Store.store_hash == user_data['store_hash'])).first()
@@ -70,9 +69,9 @@ def load(signed_payload):
 
     # TODO Return actual app dashboard
     return {"message": "Hello {}".format(user.email)}
-#
-# # The Uninstall URL. See https://developer.bigcommerce.com/api/load
-# @router.route('/bigcommerce/uninstall')
+
+## Single click uninstall https://developer.bigcommerce.com/api-docs/apps/guide/callbacks
+# @router.get('/bigcommerce/uninstall')
 # def uninstall():
 #     # Decode and verify payload
 #     payload = flask.request.args['signed_payload_jwt']
@@ -99,8 +98,9 @@ def load(signed_payload):
 #     return flask.Response('Deleted', status=204)
 #
 #
-# # The Remove User Callback URL.
-# @router.route('/bigcommerce/remove-user')
+
+## Single click remove-user https://developer.bigcommerce.com/api-docs/apps/guide/callbacks
+# @router.get('/bigcommerce/remove-user')
 # def remove_user():
 #     payload = flask.request.args['signed_payload_jwt']
 #     try:
