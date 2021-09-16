@@ -1,11 +1,12 @@
 import bigcommerce
 from bigcommerce.api import BigcommerceApi
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Depends
 from fastapi.responses import RedirectResponse, Response
 from sqlmodel import Session, select
 
 from app.config import config
 from app.db import engine
+from app.dependencies import verified_payload
 from app.models import Store, User, StoreUserScope
 
 router = APIRouter(
@@ -46,12 +47,7 @@ def auth_callback(request: Request, code: str, context: str, scope: str):
 
 ## Single click load https://developer.bigcommerce.com/api-docs/apps/guide/callbacks
 @router.get('/load')
-def load(signed_payload):
-    try:
-        user_data = BigcommerceApi.oauth_verify_payload(signed_payload, config['CLIENT_SECRET'])
-    except Exception as e:
-        raise e
-
+def load(user_data: dict = Depends(verified_payload)):
     session = Session(engine)
 
     store = session.exec(select(Store).where(Store.store_hash == user_data['store_hash'])).first()
@@ -84,12 +80,7 @@ def load(signed_payload):
 
 ## Single click uninstall https://developer.bigcommerce.com/api-docs/apps/guide/callbacks
 @router.get('/uninstall')
-def uninstall(signed_payload):
-    try:
-        user_data = BigcommerceApi.oauth_verify_payload(signed_payload, config['CLIENT_SECRET'])
-    except Exception as e:
-        raise e
-
+def uninstall(user_data: dict = Depends(verified_payload)):
     session = Session(engine)
 
     store_hash = user_data['store_hash']
@@ -107,12 +98,7 @@ def uninstall(signed_payload):
 
 ## Single click remove-user https://developer.bigcommerce.com/api-docs/apps/guide/callbacks
 @router.get('/remove-user')
-def remove_user(signed_payload):
-    try:
-        user_data = BigcommerceApi.oauth_verify_payload(signed_payload, config['CLIENT_SECRET'])
-    except Exception as e:
-        raise e
-
+def remove_user(user_data: dict = Depends(verified_payload)):
     session = Session(engine)
 
     user = session.exec(select(User).where(User.bc_id == user_data['user']['id'])).first()
