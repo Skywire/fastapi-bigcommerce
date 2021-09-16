@@ -1,7 +1,7 @@
 import bigcommerce
 from bigcommerce.api import BigcommerceApi
 from fastapi import APIRouter, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
 from sqlmodel import Session, select
 
 from app.config import config
@@ -41,7 +41,7 @@ def auth_callback(request: Request, code: str, context: str, scope: str):
     session.commit()
 
     ## TODO Redirect correctly so we don't get a payload error on /load
-    return RedirectResponse(request.url_for('load'))
+    return {'message': 'Hello'}
 
 
 ## Single click load https://developer.bigcommerce.com/api-docs/apps/guide/callbacks
@@ -83,54 +83,41 @@ def load(signed_payload):
     return {"message": "Hello {}".format(user.email)}
 
 ## Single click uninstall https://developer.bigcommerce.com/api-docs/apps/guide/callbacks
-# @router.get('/bigcommerce/uninstall')
-# def uninstall():
-#     # Decode and verify payload
-#     payload = flask.request.args['signed_payload_jwt']
-#     try:
-#         user_data = BigcommerceApi.oauth_verify_payload_jwt(payload, client_secret(), client_id())
-#     except Exception as e:
-#         return jwt_error(e)
-#
-#     # Lookup store
-#     store_hash = user_data['sub'].split('stores/')[1]
-#     store = Store.query.filter_by(store_hash=store_hash).first()
-#     if store is None:
-#         return "Store not found!", 401
-#
-#     # Clean up: delete store associated users. This logic is up to you.
-#     # You may decide to keep these records around in case the user installs
-#     # your app again.
-#     storeusers = StoreUser.query.filter_by(store_id=store.id)
-#     for storeuser in storeusers:
-#         db.session.delete(storeuser)
-#     db.session.delete(store)
-#     db.session.commit()
-#
-#     return flask.Response('Deleted', status=204)
-#
-#
+@router.get('/uninstall')
+def uninstall(signed_payload):
+    try:
+        user_data = BigcommerceApi.oauth_verify_payload(signed_payload, config['CLIENT_SECRET'])
+    except Exception as e:
+        raise e
+
+    session = Session(engine)
+
+    store_hash = user_data['store_hash']
+    store = session.exec(select(Store).where(Store.store_hash == store_hash)).first()
+    if store is None:
+        raise Exception('Store does not exist')
+
+    for user in store.users:
+        session.delete(user)
+
+    session.delete(store)
+    session.commit()
+
+    return Response(None, status_code=204)
 
 ## Single click remove-user https://developer.bigcommerce.com/api-docs/apps/guide/callbacks
-# @router.get('/bigcommerce/remove-user')
-# def remove_user():
-#     payload = flask.request.args['signed_payload_jwt']
-#     try:
-#         user_data = BigcommerceApi.oauth_verify_payload_jwt(payload, client_secret(), client_id())
-#     except Exception as e:
-#         return jwt_error(e)
-#
-#     store_hash = user_data['sub'].split('stores/')[1]
-#     store = Store.query.filter_by(store_hash=store_hash).first()
-#     if store is None:
-#         return "Store not found!", 401
-#
-#     # Lookup user and delete it
-#     bc_user_id = user_data['user']['id']
-#     user = User.query.filter_by(bc_id=bc_user_id).first()
-#     if user is not None:
-#         storeuser = StoreUser.query.filter_by(user_id=user.id, store_id=store.id).first()
-#         db.session.delete(storeuser)
-#         db.session.commit()
-#
-#     return flask.Response('Deleted', status=204)
+@router.get('/remove-user')
+def remove_user(signed_payload):
+    try:
+        user_data = BigcommerceApi.oauth_verify_payload(signed_payload, config['CLIENT_SECRET'])
+    except Exception as e:
+        raise e
+
+    session = Session(engine)
+
+    user = session.exec(select(User).where(User.bc_id == user_data['user']['id'])).first()
+    if user is not None:
+        session.delete(user)
+        session.commit()
+
+    return Response(None, status_code=204)
