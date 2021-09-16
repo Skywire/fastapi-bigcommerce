@@ -1,26 +1,45 @@
+import bigcommerce
 from bigcommerce.api import BigcommerceApi
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
+from sqlmodel import Session, select
+
 from app.config import config
-import bigcommerce
+from app.db import engine
+from app.models import Store, User
 
 router = APIRouter(
     prefix="/bigcommerce/oauth",
     tags=["Auth"],
 )
 
+
 @router.get('/callback')
 def auth_callback(request: Request, code: str, context: str, scope: str):
-    if config['token'] is None:
-        store_hash = context.split('/')[1]
-        redirect = request.url_for('auth_callback')
+    session = Session(engine)
 
+    store_hash = context.split('/')[1]
+
+    store = session.exec(select(Store).where(Store.store_hash == store_hash)).first()
+    if store is None:
+        redirect = request.url_for('auth_callback')
         api = bigcommerce.api.BigcommerceApi(client_id=config['CLIENT_ID'], store_hash=store_hash)
         token = api.oauth_fetch_token(config['CLIENT_SECRET'], code, context, scope, redirect)
-        config['token'] = token
 
-    ## TODO Create / Update store and user token
+        store = Store(store_hash=store_hash, access_token=token['access_token'], scope=scope)
+        session.add(store)
 
+        user = session.exec(select(User).where(User.bc_id == 2073294)).first()
+        if user is None:
+            user = User(bc_id=token['user']['id'], email=token['user']['email'])
+            session.add(user)
+
+    user = session.exec(select(User).where(User.bc_id == 2073294)).first()
+    user.stores.append(store)
+
+    session.commit()
+
+    ## TODO Redirect correctly so we don't get a payload error on /load
     return RedirectResponse(request.url_for('load'))
 
 
