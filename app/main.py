@@ -1,15 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from app.routers import bigcommerce_oauth
 
 app = FastAPI()
 
-origins = [
-    "http://localhost.tiangolo.com",
-    "https://localhost.tiangolo.com",
-    "http://localhost",
-    "http://localhost:8080",
-]
+origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
@@ -23,5 +19,6 @@ app.add_middleware(
 @app.get("/")
 async def hello():
     return {"message": "Hello World"}
+
 
 app.include_router(bigcommerce_oauth.router)
