@@ -6,12 +6,13 @@ from sqlmodel import Session, select
 
 from app.config import config
 from app.db import engine
-from app.models import Store, User
+from app.models import Store, User, StoreUserScope
 
 router = APIRouter(
     prefix="/bigcommerce/oauth",
     tags=["Auth"],
 )
+
 
 ## Single click oauth callback https://developer.bigcommerce.com/api-docs/partner/getting-started/app-development/single-click-apps/single-click-app-oauth-flow
 @router.get('/callback')
@@ -65,6 +66,17 @@ def load(signed_payload):
 
     if user not in store.users:
         store.users.append(user)
+        session.commit()
+
+    scope = session.exec(select(StoreUserScope).where(Store.id == store.id and User.id == user.id)).first()
+    if scope is None:
+        is_owner=user_data['user']['id'] == user_data['owner']['id']
+        scope = StoreUserScope(
+            store_id=store.id,
+            user_id=user.id,
+            is_owner=is_owner
+        )
+        session.add(scope)
         session.commit()
 
     # TODO Return actual app dashboard
