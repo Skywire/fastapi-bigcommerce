@@ -52,9 +52,24 @@ def load(signed_payload):
         raise e
 
     # TODO Create / update user entity
+    session = Session(engine)
+
+    store = session.exec(select(Store).where(Store.store_hash == user_data['store_hash'])).first()
+    if store is None:
+        raise Exception('Invalid store {}'.format(user_data['store_hash']))
+
+    user = session.exec(select(User).where(User.bc_id == user_data['user']['id'])).first()
+    if user is None:
+        user = User(bc_id=user_data['user']['id'], email=user_data['user']['email'])
+        session.add(user)
+        session.commit()
+
+    if user not in store.users:
+        store.users.append(user)
+        session.commit()
 
     # TODO Return actual app dashboard
-    return {"message": "Hello {}".format(user_data['user']['email'])}
+    return {"message": "Hello {}".format(user.email)}
 #
 # # The Uninstall URL. See https://developer.bigcommerce.com/api/load
 # @router.route('/bigcommerce/uninstall')
