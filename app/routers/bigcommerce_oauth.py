@@ -2,12 +2,15 @@ import bigcommerce
 from bigcommerce.api import BigcommerceApi
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import RedirectResponse, Response
+from fastapi.templating import Jinja2Templates
+
 from sqlmodel import Session, select
 
 from app.config import config
 from app.db import engine
-from app.dependencies import verified_payload
+from app.dependencies import verified_payload, jinja_templates
 from app.models import Store, User, StoreUserScope
+
 
 router = APIRouter(
     prefix="/bigcommerce/oauth",
@@ -47,7 +50,7 @@ def auth_callback(request: Request, code: str, context: str, scope: str):
 
 ## Single click load https://developer.bigcommerce.com/api-docs/apps/guide/callbacks
 @router.get('/load')
-def load(user_data: dict = Depends(verified_payload)):
+def load(request: Request, user_data: dict = Depends(verified_payload), templates: Jinja2Templates = Depends(jinja_templates)):
     session = Session(engine)
 
     store = session.exec(select(Store).where(Store.store_hash == user_data['store_hash'])).first()
@@ -75,8 +78,7 @@ def load(user_data: dict = Depends(verified_payload)):
         session.add(scope)
         session.commit()
 
-    # TODO Return actual app dashboard
-    return {"message": "Hello {}".format(user.email)}
+    return templates.TemplateResponse("dashboard.html", {"request": request, "user": user, "store": store})
 
 ## Single click uninstall https://developer.bigcommerce.com/api-docs/apps/guide/callbacks
 @router.get('/uninstall')
