@@ -20,7 +20,7 @@ router = APIRouter(
 
 ## Single click oauth callback https://developer.bigcommerce.com/api-docs/partner/getting-started/app-development/single-click-apps/single-click-app-oauth-flow
 @router.get('/callback')
-def auth_callback(request: Request, code: str, context: str, scope: str):
+def auth_callback(request: Request, code: str, context: str, scope: str, templates: Jinja2Templates = Depends(jinja_templates)):
     session = Session(engine)
 
     store_hash = context.split('/')[1]
@@ -44,8 +44,7 @@ def auth_callback(request: Request, code: str, context: str, scope: str):
 
     session.commit()
 
-    ## TODO Redirect correctly so we don't get a payload error on /load
-    return {'message': 'Hello'}
+    return templates.TemplateResponse("dashboard.html", {"request": request, "user": user, "store": store})
 
 
 ## Single click load https://developer.bigcommerce.com/api-docs/apps/guide/callbacks
