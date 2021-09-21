@@ -93,6 +93,7 @@ def uninstall(user_data: dict = Depends(verified_payload)):
         session.delete(user)
 
     session.delete(store)
+    session.delete(store)
     session.commit()
 
     return Response(None, status_code=204)

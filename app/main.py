@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.routers import bigcommerce_oauth
+from app.routers import bigcommerce_oauth, products
 
 app = FastAPI()
 
@@ -26,3 +26,4 @@ async def hello():
 
 
 app.include_router(bigcommerce_oauth.router)
+app.include_router(products.router)
