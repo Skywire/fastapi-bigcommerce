@@ -1,16 +1,13 @@
 import bigcommerce
-from bigcommerce.api import BigcommerceApi
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
-
 from sqlmodel import Session, select
 
 from app.config import config
 from app.db import engine
 from app.dependencies import verified_payload, jinja_templates
 from app.models import Store, User, StoreUserScope
-
 
 router = APIRouter(
     prefix="/bigcommerce/oauth",
@@ -20,7 +17,8 @@ router = APIRouter(
 
 ## Single click oauth callback https://developer.bigcommerce.com/api-docs/partner/getting-started/app-development/single-click-apps/single-click-app-oauth-flow
 @router.get('/callback')
-def auth_callback(request: Request, code: str, context: str, scope: str, templates: Jinja2Templates = Depends(jinja_templates)):
+def auth_callback(request: Request, code: str, context: str, scope: str,
+                  templates: Jinja2Templates = Depends(jinja_templates)):
     session = Session(engine)
 
     store_hash = context.split('/')[1]
@@ -49,7 +47,8 @@ def auth_callback(request: Request, code: str, context: str, scope: str, templat
 
 ## Single click load https://developer.bigcommerce.com/api-docs/apps/guide/callbacks
 @router.get('/load')
-def load(request: Request, user_data: dict = Depends(verified_payload), templates: Jinja2Templates = Depends(jinja_templates)):
+def load(request: Request, user_data: dict = Depends(verified_payload),
+         templates: Jinja2Templates = Depends(jinja_templates)):
     session = Session(engine)
 
     store = session.exec(select(Store).where(Store.store_hash == user_data['store_hash'])).first()
@@ -68,7 +67,7 @@ def load(request: Request, user_data: dict = Depends(verified_payload), template
 
     scope = session.exec(select(StoreUserScope).where(Store.id == store.id and User.id == user.id)).first()
     if scope is None:
-        is_owner=user_data['user']['id'] == user_data['owner']['id']
+        is_owner = user_data['user']['id'] == user_data['owner']['id']
         scope = StoreUserScope(
             store_id=store.id,
             user_id=user.id,
@@ -77,7 +76,11 @@ def load(request: Request, user_data: dict = Depends(verified_payload), template
         session.add(scope)
         session.commit()
 
-    return templates.TemplateResponse("dashboard.html", {"request": request, "user": user, "store": store})
+    redirect_url = "{}?jwt={}".format(config['frontend_url'], request.get('signed_payload'))
+    return RedirectResponse(redirect_url, 302)
+
+    # return templates.TemplateResponse("dashboard.html", {"request": request, "user": user, "store": store})
+
 
 ## Single click uninstall https://developer.bigcommerce.com/api-docs/apps/guide/callbacks
 @router.get('/uninstall')
@@ -97,6 +100,7 @@ def uninstall(user_data: dict = Depends(verified_payload)):
     session.commit()
 
     return Response(None, status_code=204)
+
 
 ## Single click remove-user https://developer.bigcommerce.com/api-docs/apps/guide/callbacks
 @router.get('/remove-user')
