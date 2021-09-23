@@ -17,8 +17,9 @@ router = APIRouter(
 @router.get('/')
 def list(user_data: dict = Depends(verified_bearer_header)):
     session = Session(engine)
-    store = session.exec(select(Store).where(Store.store_hash == user_data['store_hash'])).first()
-    api = bigcommerce.api.BigcommerceApi(client_id=config['CLIENT_ID'], store_hash=user_data['store_hash'], access_token=store.access_token)
+    store_hash = user_data['sub'].split('/').pop()
+    store = session.exec(select(Store).where(Store.store_hash == store_hash)).first()
+    api = bigcommerce.api.BigcommerceApi(client_id=config['CLIENT_ID'], store_hash=store_hash, access_token=store.access_token)
 
     products_all = api.Products.all()
     result = []

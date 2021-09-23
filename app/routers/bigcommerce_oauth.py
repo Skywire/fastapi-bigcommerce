@@ -6,7 +6,7 @@ from sqlmodel import Session, select
 
 from app.config import config
 from app.db import engine
-from app.dependencies import verified_payload, jinja_templates
+from app.dependencies import verified_jwt, jinja_templates
 from app.models import Store, User, StoreUserScope
 
 router = APIRouter(
@@ -21,7 +21,7 @@ def auth_callback(request: Request, code: str, context: str, scope: str,
                   templates: Jinja2Templates = Depends(jinja_templates)):
     session = Session(engine)
 
-    store_hash = context.split('/')[1]
+    store_hash = context.split('/')
 
     store = session.exec(select(Store).where(Store.store_hash == store_hash)).first()
     if store is None:
@@ -47,13 +47,13 @@ def auth_callback(request: Request, code: str, context: str, scope: str,
 
 ## Single click load https://developer.bigcommerce.com/api-docs/apps/guide/callbacks
 @router.get('/load')
-def load(request: Request, user_data: dict = Depends(verified_payload),
+def load(request: Request, user_data: dict = Depends(verified_jwt),
          templates: Jinja2Templates = Depends(jinja_templates)):
     session = Session(engine)
-
-    store = session.exec(select(Store).where(Store.store_hash == user_data['store_hash'])).first()
+    store_hash = user_data['sub'].split('/')[1]
+    store = session.exec(select(Store).where(Store.store_hash == store_hash)).first()
     if store is None:
-        raise Exception('Invalid store {}'.format(user_data['store_hash']))
+        raise Exception('Invalid store {}'.format(store_hash))
 
     user = session.exec(select(User).where(User.bc_id == user_data['user']['id'])).first()
     if user is None:
@@ -76,7 +76,7 @@ def load(request: Request, user_data: dict = Depends(verified_payload),
         session.add(scope)
         session.commit()
 
-    redirect_url = "{}?jwt={}".format(config['frontend_url'], request.get('signed_payload'))
+    redirect_url = "{}?jwt={}".format(config['frontend_url'], request.get('signed_payload_jwt'))
     return RedirectResponse(redirect_url, 302)
 
     # return templates.TemplateResponse("dashboard.html", {"request": request, "user": user, "store": store})
@@ -84,10 +84,10 @@ def load(request: Request, user_data: dict = Depends(verified_payload),
 
 ## Single click uninstall https://developer.bigcommerce.com/api-docs/apps/guide/callbacks
 @router.get('/uninstall')
-def uninstall(user_data: dict = Depends(verified_payload)):
+def uninstall(user_data: dict = Depends(verified_jwt)):
     session = Session(engine)
 
-    store_hash = user_data['store_hash']
+    store_hash = user_data['sub'].split('/')[1]
     store = session.exec(select(Store).where(Store.store_hash == store_hash)).first()
     if store is None:
         raise Exception('Store does not exist')
@@ -104,7 +104,7 @@ def uninstall(user_data: dict = Depends(verified_payload)):
 
 ## Single click remove-user https://developer.bigcommerce.com/api-docs/apps/guide/callbacks
 @router.get('/remove-user')
-def remove_user(user_data: dict = Depends(verified_payload)):
+def remove_user(user_data: dict = Depends(verified_jwt)):
     session = Session(engine)
 
     user = session.exec(select(User).where(User.bc_id == user_data['user']['id'])).first()

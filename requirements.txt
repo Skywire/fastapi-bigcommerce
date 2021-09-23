@@ -15,7 +15,6 @@ pydantic==1.8.2
 PyJWT==2.1.0
 requests==2.26.0
 SQLAlchemy==1.4.23
-sqlalchemy2-stubs==0.0.2a15
 sqlmodel==0.0.4
 starlette==0.14.2
 typing-extensions==3.10.0.2
