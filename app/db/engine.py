@@ -1,8 +1,12 @@
 import os
 
-from sqlmodel import Field, Relationship, Session, SQLModel, create_engine
+from sqlmodel import create_engine
 
-sqlite_file_name = "database.db"
-sqlite_url = f"sqlite:///{os.getcwd()}/{sqlite_file_name}"
+from app.config import config
 
-engine = create_engine(sqlite_url, echo=True)
+if 'DATABASE_URL' in config:
+    db_url = config['DATABASE_URL']
+else:
+    db_url = f"sqlite:///{os.getcwd()}/database.db"
+
+engine = create_engine(db_url, echo=True)
