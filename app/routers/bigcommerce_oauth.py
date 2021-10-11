@@ -21,8 +21,7 @@ def auth_callback(request: Request, code: str, context: str, scope: str,
                   templates: Jinja2Templates = Depends(jinja_templates)):
     session = Session(engine)
 
-    store_hash = context.split('/')
-
+    store_hash = context.split('/')[1]
     store = session.exec(select(Store).where(Store.store_hash == store_hash)).first()
     if store is None:
         redirect = request.url_for('auth_callback')
