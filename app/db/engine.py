@@ -6,6 +6,7 @@ from app.config import config
 
 if 'DATABASE_URL' in config:
     db_url = config['DATABASE_URL']
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
 else:
     db_url = f"sqlite:///{os.getcwd()}/database.db"
 
