@@ -18,8 +18,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/static", StaticFiles(directory="app/view/static"), name="static")
-
 @app.get("/")
 async def hello():
     return {"message": "Hello World"}
