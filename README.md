@@ -1,3 +1,9 @@
+## Installation
+
+Copy .env.dist to .env and add the config values.
+
+Frontend URL is the URL of the admin react app https://github.com/Skywire/react-bigcommerce
+
 ## Run
 
 `uvicorn app.main:app`
@@ -20,3 +26,14 @@ y1v4oav36m
 
 ## Test URL
 http://127.0.0.1:8000/bigcommerce/oauth/load?signed_payload=eyJ1c2VyIjp7ImlkIjoyMDczMjk0LCJlbWFpbCI6InRlY2grYmlnY29tbWVyY2VAc2t5d2lyZS5jby51ayJ9LCJvd25lciI6eyJpZCI6MjA3MzI5NCwiZW1haWwiOiJ0ZWNoK2JpZ2NvbW1lcmNlQHNreXdpcmUuY28udWsifSwiY29udGV4dCI6InN0b3Jlcy95MXY0b2F2MzZtIiwic3RvcmVfaGFzaCI6InkxdjRvYXYzNm0iLCJ0aW1lc3RhbXAiOjE2MzIzOTQyNTZ9.YmQ4NjQ2NDVkOGJmYzU4NDJiOTllMTE0YzI3YzdmNjlkZDA5ZDJhZWMyYjEzNzAwNDAyMTJlODFmMTU2MGFhMA==
+
+## Deployment to Heroku
+
+Add the relevant values from .env.dist to the Heroku config vars 
+
+Install heroku CLI and run
+```
+heroku login
+heroku git:remote --app fastapi-bigcommerce
+git push heroku
+```
