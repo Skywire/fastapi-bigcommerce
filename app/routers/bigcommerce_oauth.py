@@ -75,7 +75,8 @@ def load(request: Request, user_data: dict = Depends(verified_jwt),
         session.add(scope)
         session.commit()
 
-    redirect_url = "{}?jwt={}".format(config['FRONTEND_URL'], request.get('signed_payload_jwt'))
+    request_args = dict(request.query_params)
+    redirect_url = "{}?jwt={}".format(config['FRONTEND_URL'], request_args['signed_payload_jwt'])
     return RedirectResponse(redirect_url, 302)
 
     # return templates.TemplateResponse("dashboard.html", {"request": request, "user": user, "store": store})
